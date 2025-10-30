@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>BLE Smart.ipa</key>
+	<array>
+		<dict>
+			<key>architectures</key>
+			<array>
+				<string>arm64</string>
+			</array>
+			<key>buildNumber</key>
+			<string>1</string>
+			<key>certificate</key>
+			<dict>
+				<key>SHA1</key>
+				<string>8E5FB15237A18549339ECA04D2BAA051E9BC321D</string>
+				<key>dateExpires</key>
+				<string>2025/7/30</string>
+				<key>type</key>
+				<string>Cloud Managed Apple Distribution</string>
+			</dict>
+			<key>embeddedBinaries</key>
+			<array>
+				<dict>
+					<key>architectures</key>
+					<array>
+						<string>arm64</string>
+					</array>
+					<key>buildNumber</key>
+					<string>1</string>
+					<key>certificate</key>
+					<dict>
+						<key>SHA1</key>
+						<string>8E5FB15237A18549339ECA04D2BAA051E9BC321D</string>
+						<key>dateExpires</key>
+						<string>2025/7/30</string>
+						<key>type</key>
+						<string>Cloud Managed Apple Distribution</string>
+					</dict>
+					<key>name</key>
+					<string>BLEFramework.framework</string>
+					<key>team</key>
+					<dict>
+						<key>id</key>
+						<string>LV6AXR688F</string>
+						<key>name</key>
+						<string>WENTAI TECHNOLOGY CORPORATION</string>
+					</dict>
+					<key>versionNumber</key>
+					<string>1.0</string>
+				</dict>
+			</array>
+			<key>entitlements</key>
+			<dict>
+				<key>application-identifier</key>
+				<string>LV6AXR688F.com.wentaitek.blesmart</string>
+				<key>com.apple.developer.team-identifier</key>
+				<string>LV6AXR688F</string>
+				<key>get-task-allow</key>
+				<false/>
+			</dict>
+			<key>name</key>
+			<string>BLE Smart.app</string>
+			<key>profile</key>
+			<dict>
+				<key>UUID</key>
+				<string>6acfb26d-e8a9-4c51-8114-5f41f03e264e</string>
+				<key>dateExpires</key>
+				<string>2025/7/30</string>
+				<key>name</key>
+				<string>iOS Team Ad Hoc Provisioning Profile: com.wentaitek.blesmart</string>
+			</dict>
+			<key>team</key>
+			<dict>
+				<key>id</key>
+				<string>LV6AXR688F</string>
+				<key>name</key>
+				<string>WENTAI TECHNOLOGY CORPORATION</string>
+			</dict>
+			<key>versionNumber</key>
+			<string>2.0.2</string>
+		</dict>
+	</array>
+</dict>
+</plist>

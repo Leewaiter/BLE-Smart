@@ -1,0 +1,24 @@
+{
+  "originHash" : "af0691bff134775333dd8e375b08fb6ead8a36af5d3b86a4f196a58c01d3a3a9",
+  "pins" : [
+    {
+      "identity" : "smartcodable",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/intsig171/SmartCodable",
+      "state" : {
+        "revision" : "f9297874793a5d628ebd6670b7b614288504145e",
+        "version" : "3.4.5"
+      }
+    },
+    {
+      "identity" : "swiftmqtt",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/ankitspd/SwiftMQTT",
+      "state" : {
+        "revision" : "e412d414fbc03cabcee7fcbc8432aa1efb558c94",
+        "version" : "3.0.1"
+      }
+    }
+  ],
+  "version" : 3
+}
