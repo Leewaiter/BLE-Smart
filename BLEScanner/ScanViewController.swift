@@ -113,7 +113,7 @@ extension Data {
 }
 
 
-class ScanViewController: UIViewController, BLEFramework.BLEServiceDelegate,CBPeripheralManagerDelegate, UIGestureRecognizerDelegate{
+class ScanViewController: UIViewController, BLEFramework.BLEServiceDelegate,CBPeripheralManagerDelegate, UIGestureRecognizerDelegate, CBPeripheralDelegate{
     
     var locationManager = CLLocationManager()
     @IBOutlet weak var tableView: UITableView!
@@ -570,12 +570,16 @@ class ScanViewController: UIViewController, BLEFramework.BLEServiceDelegate,CBPe
 //            print("M data: \(manufacturerData as! NSData)")
 //        }
         
-        if (peripheralname as NSString).length >= 9{
-            if String(peripheralname.prefix(9)) == "Bluedroid"{
+//        print("peripheral: \(peripheral.name ?? "N/A")\n")
+        
+//        if (peripheralname as NSString).length >= 9{
+//            if String(peripheralname.prefix(9)) == "Bluedroid"{
+//                peripheral.delegate = self
                 
-                
-            }
-        }
+//                peripheralArray.append(peripheral)
+//                rssi.append(Int(truncating: RSSI))
+//            }
+//        }
         
         if (peripheralname as NSString).length >= 12{
             if String(peripheralname.prefix(8)) == "DOOR SW_"{
@@ -1578,6 +1582,12 @@ extension ScanViewController: UITableViewDelegate, UITableViewDataSource {
         cell.deviceUUID.text = info[indexPath.row]
         cell.devicePower.text = String(rssi[indexPath.row]) + "dBm"
         
+        
+//        let peripheral = peripheralArray[indexPath.row]
+//        let rssi = String(rssi[indexPath.row]) + "dBm"
+//        if (cell.deviceName.text != cell.textLabel?.text){
+//            cell.textLabel?.text = String(peripheral.name ?? "Unknown Device") + rssi
+//        }
 
         if deviceConnected[indexPath.row]{
             cell.deviceName.textColor = greenColor
