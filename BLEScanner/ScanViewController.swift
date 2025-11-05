@@ -421,6 +421,13 @@ class ScanViewController: UIViewController, BLEFramework.BLEServiceDelegate,CBPe
         UpdateBleList()
     }
     
+//    override func viewWillDisappear(_ animated: Bool) {
+//            super.viewWillDisappear(animated)
+//        if bleFramework.isScanning == true {
+//            bleFramework.stopScan()
+//            }
+//        }
+    
     @objc func UpdateRssi()
     {
         tableView.reloadData()
@@ -454,6 +461,7 @@ class ScanViewController: UIViewController, BLEFramework.BLEServiceDelegate,CBPe
             beaconPeripheralData = localBeacon.peripheralData(withMeasuredPower: nil)
             
             peripheralManager = CBPeripheralManager(delegate: self, queue: nil)
+            print("localBeacon : \(localBeacon)\nbeaconPeripheralData : \(beaconPeripheralData)\nperipheralManager : \(peripheralManager)")
             delay(by: 1){
                 self.peripheralManager?.stopAdvertising()
             }
@@ -479,6 +487,9 @@ class ScanViewController: UIViewController, BLEFramework.BLEServiceDelegate,CBPe
             delay(by: 1){
                 self.peripheralManager?.stopAdvertising()
             }
+            
+            print("localBeacon : \(localBeacon)\nbeaconPeripheralData : \(beaconPeripheralData)\nperipheralManager : \(peripheralManager)")
+            
         }else{
             levelValue.text = "Level：xx"
             colorValue.text = "Color：xx"
@@ -502,6 +513,9 @@ class ScanViewController: UIViewController, BLEFramework.BLEServiceDelegate,CBPe
             beaconPeripheralData = localBeacon.peripheralData(withMeasuredPower: nil)
             
             peripheralManager = CBPeripheralManager(delegate: self, queue: nil)
+            
+            print("localBeacon : \(localBeacon)\nbeaconPeripheralData : \(beaconPeripheralData)\nperipheralManager : \(peripheralManager)")
+            
             delay(by: 1){
                 self.peripheralManager?.stopAdvertising()
             }
