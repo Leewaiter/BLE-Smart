@@ -7,6 +7,7 @@ struct wifiRB1: Equatable {
     var rssi: NSNumber
     let name: String
     let isConnectable: Bool
+    var isSelected: Bool = false
 }
 
 class WifiRB1ViewController: UIViewController, CBCentralManagerDelegate, CBPeripheralDelegate, UITableViewDataSource, UITableViewDelegate {
@@ -17,6 +18,10 @@ class WifiRB1ViewController: UIViewController, CBCentralManagerDelegate, CBPerip
     
     @IBOutlet weak var version: UILabel!
     @IBOutlet weak var wifiRouterTV: UITableView!
+    
+    var isUpdatingRSSI = true
+    private var lastUpdateTimes: [UUID: Date] = [:]
+    
     
     private let stackView = UIStackView()
     private let titleLabel = UILabel()
@@ -40,7 +45,9 @@ class WifiRB1ViewController: UIViewController, CBCentralManagerDelegate, CBPerip
         centralManager = CBCentralManager(delegate: self, queue: nil)
         wifiRouterTV.dataSource = self
         wifiRouterTV.delegate = self
-        wifiRouterTV.register(UITableViewCell.self, forCellReuseIdentifier: "wifiRBCell")
+        
+        wifiRouterTV.allowsSelection = true
+        wifiRouterTV.allowsMultipleSelection = false
         
         setupUI()
         stackView.isHidden = true
@@ -132,12 +139,11 @@ class WifiRB1ViewController: UIViewController, CBCentralManagerDelegate, CBPerip
         wifiRouterTV.refreshControl?.endRefreshing()
         
         showWaitingAnimation()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
-            guard let self = self else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [unowned self] in
             
-            if self.centralManager.state == .poweredOn {
+            if centralManager.state == .poweredOn {
                 refreshControl.endRefreshing()
-                self.centralManager.scanForPeripherals(withServices: nil, options: [CBCentralManagerScanOptionAllowDuplicatesKey: true])
+                centralManager.scanForPeripherals(withServices: nil, options: [CBCentralManagerScanOptionAllowDuplicatesKey: true])
                 isRefreshing = false
             }
         }
@@ -191,13 +197,12 @@ class WifiRB1ViewController: UIViewController, CBCentralManagerDelegate, CBPerip
         connectButton.setTitleColor(.white, for: .normal)
         connectButton.layer.cornerRadius = 8
         connectButton.heightAnchor.constraint(equalToConstant: 36).isActive = true
-        connectButton.widthAnchor.constraint(equalToConstant: 100).isActive = true
         connectButton.addTarget(self, action: #selector(connectTapped), for: .touchUpInside)
         stackView.addArrangedSubview(connectButton)
+        
     }
     
     private func updateUI() {
-        // 檢查設備是否存在
         guard let index = TVindexPath, index < devices.count else {
 //            print("無效索引，隱藏面板")
             stackView.isHidden = true
@@ -281,31 +286,34 @@ class WifiRB1ViewController: UIViewController, CBCentralManagerDelegate, CBPerip
         guard !isRefreshing else { return }
         guard let name = peripheral.name, name.hasPrefix("B") else { return }
         
-//        if let manufacturerData = advertisementData[CBAdvertisementDataManufacturerDataKey] as? Data {
-//            let macBytes = manufacturerData.subdata(in: 0..<6)
-//            let macString = macBytes.map { String(format: "%02X", $0) }.joined(separator: ":")
-//            print("Bluetooth MAC: \(macString)")  // e.g., "AA:BB:CC:DD:EE:FF"
-//        }
+        
+        let now = Date()
+        //避免頻繁更新RSSI, 目前設定為0.5秒一次
+        if let lastTime = lastUpdateTimes[peripheral.identifier], now.timeIntervalSince(lastTime) < 0.5 {
+            return
+        }
+        lastUpdateTimes[peripheral.identifier] = now
         
         let deviceName = peripheral.name ?? "Unknow Device:\(peripheral.identifier.uuidString.utf8)"
         let isConnectable = advertisementData[CBAdvertisementDataIsConnectable] as? Bool ?? false
-        let newDevice = wifiRB1(peripheral: peripheral, rssi: RSSI, name: deviceName, isConnectable: isConnectable)
+        let newDevice = wifiRB1(peripheral: peripheral, rssi: RSSI, name: deviceName, isConnectable: isConnectable, isSelected: false)
         
         if let index = devices.firstIndex(where: { $0.peripheral.identifier == peripheral.identifier }) {
-            devices[index].rssi = RSSI
-            let indexPath = IndexPath(row: index, section: 0)
-            wifiRouterTV.reloadRows(at: [indexPath], with: .none)
+            if isUpdatingRSSI {
+                devices[index].rssi = RSSI
+                let indexPath = IndexPath(row: index, section: 0)
+                wifiRouterTV.reloadRows(at: [indexPath], with: .none)
+            }
         } else {
             devices.append(newDevice)
             let newIndexPath = IndexPath(row: devices.count - 1, section: 0)
-            wifiRouterTV.insertRows(at: [newIndexPath], with: .automatic)
+            wifiRouterTV.insertRows(at: [newIndexPath], with: .fade)
         }
         
         if devices.count == 1 {
             stopWaitingAnimation()
         }
         
-//        updateUI()
     }
     
     private func getSignalImage(forRSSI rssi: Double) -> UIImage? {
@@ -332,17 +340,38 @@ class WifiRB1ViewController: UIViewController, CBCentralManagerDelegate, CBPerip
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
         let device = devices[indexPath.row]
-//        print("\(device.name), RSSI: \(device.rssi)")
-        let cell = tableView.dequeueReusableCell(withIdentifier: "wifiRBCell", for: indexPath)
+        let cell = tableView.dequeueReusableCell(withIdentifier: WifiRB1TableViewCell.identifier, for: indexPath) as! WifiRB1TableViewCell
+        
+        cell.contentView.backgroundColor = device.isSelected ? .systemBlue.withAlphaComponent(0.5) : .white
+        
+//        guard let cell = cell else {
+//            // Fallback：預設 cell
+//            let fallbackCell = UITableViewCell(style: .default, reuseIdentifier: "fallback")
+//            fallbackCell.textLabel?.text = device.name
+//            fallbackCell.imageView?.image = UIImage(systemName: "wifi.router.fill")
+//            return fallbackCell
+//        }
+        
+        cell.deviceName.text = device.name
+        cell.icon.image =  UIImage(systemName: "wifi.router.fill")
+        cell.dBm.text = "\(device.rssi)dBm"
+        cell.dBm.textColor = .lightGray
+        if device.isSelected {
+            cell.dBm.textColor = .black
+        }
+        cell.dBm.font = .systemFont(ofSize: 12)
         
         let signalImage = getSignalImage(forRSSI: Double(device.rssi.intValue))
-        let imageView = UIImageView(image: signalImage)
-        imageView.frame = CGRect(x: 0, y: 0, width: cell.frame.height*0.6, height: cell.frame.height*0.6)
-        imageView.contentMode = .scaleAspectFit
+        cell.dBmImage.image = signalImage
         
-        cell.textLabel?.text = device.name
-        cell.imageView?.image = UIImage(systemName: "wifi.router.fill")
-        cell.accessoryView = imageView
+//        cell.selectionStyle = .blue
+//        let selectedView = UIView()
+//        selectedView.backgroundColor = UIColor.systemBlue
+//        cell.selectedBackgroundView = selectedView
+//        let selectedView = UIView()
+//        selectedView.backgroundColor = UIColor.systemBlue.withAlphaComponent(0.5)
+//        selectedBackgroundView = selectedView
+//        print("selectionStyle: \(cell.selectionStyle)")
         
         return cell
     }
@@ -350,9 +379,11 @@ class WifiRB1ViewController: UIViewController, CBCentralManagerDelegate, CBPerip
     // MARK: - UITableViewDelegate
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        let device = devices[indexPath.row]
         
-        TVindexPath = indexPath.row  // 記錄選中索引
+        let device = devices[indexPath.row]
+        TVindexPath = indexPath.row
+        
+        isUpdatingRSSI = false
         
         titleLabel.text = "設備細節: \(device.name)"
         nameLabel.text = "名稱: \(device.name)"
@@ -360,13 +391,45 @@ class WifiRB1ViewController: UIViewController, CBCentralManagerDelegate, CBPerip
         idLabel.text = "Identifier: \(device.peripheral.identifier.uuidString)"
         stateLabel.text = "狀態: \(getPeripheralState())"
         
-        print("設備 \(device.name) 是否開放連線: \(device.isConnectable ? "是" : "否")")
+        for i in 0..<devices.count {
+            devices[i].isSelected = (i == indexPath.row)
+        }
+        
         if devices.count != 0 {
             updateUI()
             stackView.isHidden = false
         }
         
-        tableView.deselectRow(at: indexPath, animated: true)
+//        for i in 0..<devices.count {
+//            if i != indexPath.row {
+//                if let cell = tableView.cellForRow(at: IndexPath(row: i, section: 0)) {
+//                    if i == indexPath.row {
+//                        cell.isSelected = true
+//                    } else {
+//                        cell.isSelected = false
+//                        cell.accessoryType = .none
+//                        tableView.deselectRow(at: IndexPath(row: i, section: 0), animated: false)
+//                    }
+//                }
+//            }
+//        }
+        
+        tableView.reloadData()
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            self.isUpdatingRSSI = true
+        }
+//        tableView.deselectRow(at: indexPath, animated: true)
+        
+    }
+    
+//    func tableView(_ tableView: UITableView, didDeselectRowAt indexPath: IndexPath) {
+//        if let cell = tableView.cellForRow(at: indexPath) {
+//            cell.accessoryType = .none
+//        }
+//    }
+    func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+        return 45.0
     }
     
     @objc private func connectTapped() {
@@ -389,7 +452,7 @@ class WifiRB1ViewController: UIViewController, CBCentralManagerDelegate, CBPerip
             print("斷開連線: \(selectedDevice.name)")
         case .connecting:
             centralManager.cancelPeripheralConnection(selectedDevice.peripheral)
-            print("連線中，無法取消")
+            print("連線中，取消連線")
         default:
             break;
         }
@@ -438,4 +501,34 @@ class WifiRB1ViewController: UIViewController, CBCentralManagerDelegate, CBPerip
         }
         centralManager.scanForPeripherals(withServices: nil, options: [CBCentralManagerScanOptionAllowDuplicatesKey: true])
     }
+}
+
+class WifiRB1TableViewCell: UITableViewCell{
+    
+    @IBOutlet weak var deviceName: UILabel!
+    @IBOutlet weak var icon: UIImageView!
+    @IBOutlet weak var dBm: UILabel!
+    @IBOutlet weak var dBmImage: UIImageView!
+    
+    static let identifier = "WifiRB1TableViewCell"
+    
+    override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
+        super.init(style: style, reuseIdentifier: reuseIdentifier)
+        
+//        selectionStyle = .blue
+//        let selectedView = UIView()
+//        selectedView.backgroundColor = UIColor.systemBlue.withAlphaComponent(0.5)
+//        selectedBackgroundView = selectedView
+       
+    }
+    
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+//        selectionStyle = .blue
+//        let selectedView = UIView()
+//        selectedView.backgroundColor = UIColor.systemBlue.withAlphaComponent(0.5)
+//        selectedBackgroundView = selectedView
+        
+    }
+    
 }

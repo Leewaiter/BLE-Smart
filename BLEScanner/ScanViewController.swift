@@ -113,7 +113,7 @@ extension Data {
 }
 
 
-class ScanViewController: UIViewController, BLEFramework.BLEServiceDelegate,CBPeripheralManagerDelegate, UIGestureRecognizerDelegate, CBPeripheralDelegate{
+class ScanViewController: UIViewController, BLEFramework.BLEServiceDelegate,CBPeripheralManagerDelegate, UIGestureRecognizerDelegate, CBPeripheralDelegate, UITextFieldDelegate {
     
     var locationManager = CLLocationManager()
     @IBOutlet weak var tableView: UITableView!
@@ -124,6 +124,8 @@ class ScanViewController: UIViewController, BLEFramework.BLEServiceDelegate,CBPe
     @IBOutlet weak var levelValue: UILabel!
     @IBOutlet weak var colorSlider: UISlider!
     @IBOutlet weak var colorValue: UILabel!
+    @IBOutlet weak var inputLevelValue: UITextField!
+    @IBOutlet weak var inputColorValue: UITextField!
     private var bleFramework : BLEFramework!
     private var charInUse: CBCharacteristic!
     private var foundPeripherals: [CBPeripheral] = []
@@ -161,7 +163,6 @@ class ScanViewController: UIViewController, BLEFramework.BLEServiceDelegate,CBPe
     
 //    public var centralManager: CBCentralManager?
 //    public var peripheral: CBPeripheral?
-    
     var info: [String] = []
     var peripheralArray: [CBPeripheral] = []
     var id: [String] = []
@@ -172,6 +173,9 @@ class ScanViewController: UIViewController, BLEFramework.BLEServiceDelegate,CBPe
     var selected: [Bool] = []
     var index: Int? = nil
     
+    @IBOutlet weak var keyinLevel: UILabel!
+    
+    @IBOutlet weak var keyinColor: UILabel!
     
     public func delay(by delayTime: TimeInterval, qosClass: DispatchQoS.QoSClass? = nil,_ closure: @escaping () -> Void) {
         let dispatchQueue = qosClass != nil ? DispatchQueue.global(qos: qosClass!) : .main
@@ -281,6 +285,8 @@ class ScanViewController: UIViewController, BLEFramework.BLEServiceDelegate,CBPe
         self.colorValue.text = "Color：xx"
         self.levelSlider.value = 0
         self.colorSlider.value = 0
+        self.inputLevelValue.text = ""
+        self.inputColorValue.text = ""
         
         delay(by: 1.5){ [self] in
             if rssi.count > 1{
@@ -336,8 +342,119 @@ class ScanViewController: UIViewController, BLEFramework.BLEServiceDelegate,CBPe
         tapCount = 0
     }
     
+    private func broadcastLevelChange(_ value: Int) {
+        guard index != nil else { return }
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
+        self.peripheralManager?.stopAdvertising()
+        
+        let uuid = UUID(uuidString: "52455454-4c00-0000-0000-" + id[index!] + "00002000")!
+        let localBeaconMajor: CLBeaconMajorValue = 0
+        let localBeaconMinor: CLBeaconMinorValue = CLBeaconMinorValue(value)
+        
+        major[index!] = value
+        levelValue.text = "Level：" + String(value)
+        levelSlider.value = Float(value)
+        inputLevelValue.text = String(value)
+        
+        localBeacon = CLBeaconRegion(uuid: uuid, major: localBeaconMajor, minor: localBeaconMinor, identifier: "SSID")
+        beaconPeripheralData = localBeacon.peripheralData(withMeasuredPower: nil)
+        
+        peripheralManager = CBPeripheralManager(delegate: self, queue: nil)
+        delay(by: 1) {
+            self.peripheralManager?.stopAdvertising()
+        }
+        
+        print("localBeacon : \(localBeacon)\nbeaconPeripheralData : \(beaconPeripheralData)\nperipheralManager : \(peripheralManager)")
+    }
+    
+    private func broadcastColorChange(_ value: Int) {
+        guard index != nil else { return }
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
+        self.peripheralManager?.stopAdvertising()
+        
+        let uuid = UUID(uuidString: "52455454-4c00-0000-0000-" + id[index!] + "00004000")!
+        let localBeaconMajor: CLBeaconMajorValue = 0
+        let localBeaconMinor: CLBeaconMinorValue = CLBeaconMinorValue(value)
+        
+        minor[index!] = value
+        colorValue.text = "Color：" + String(value)
+        colorSlider.value = Float(value)
+        inputColorValue.text = String(value)
+        
+        localBeacon = CLBeaconRegion(uuid: uuid, major: localBeaconMajor, minor: localBeaconMinor, identifier: "SSID")
+        beaconPeripheralData = localBeacon.peripheralData(withMeasuredPower: nil)
+        
+        peripheralManager = CBPeripheralManager(delegate: self, queue: nil)
+        
+        print("localBeacon : \(localBeacon)\nbeaconPeripheralData : \(beaconPeripheralData)\nperipheralManager : \(peripheralManager)")
+        
+        delay(by: 1) {
+            self.peripheralManager?.stopAdvertising()
+        }
+    }
+    
+    // MARK: - UITextFieldDelegate
+    func textFieldDidEndEditing(_ textField: UITextField) {
+        guard index != nil else { return }
+        
+        if textField == inputLevelValue {
+            if let text = textField.text, let value = Int(text) {
+                let clampedValue = max(1, min(100, value))
+                if value == clampedValue {
+                    broadcastLevelChange(clampedValue)
+                } else {
+                    // Invalid range: Reset and alert
+                    textField.text = String(major[index!])
+                    let alert = UIAlertController(title: "Invalid Input", message: "Level must be between 1 and 100.", preferredStyle: .alert)
+                    alert.addAction(UIAlertAction(title: "OK", style: .default))
+                    present(alert, animated: true)
+                }
+            } else {
+                // Not a number: Reset
+                textField.text = String(major[index!])
+                let alert = UIAlertController(title: "Invalid Input", message: "Please enter a valid number.", preferredStyle: .alert)
+                alert.addAction(UIAlertAction(title: "OK", style: .default))
+                present(alert, animated: true)
+            }
+        } else if textField == inputColorValue {
+            if let text = textField.text, let value = Int(text) {
+                let clampedValue = max(0, min(100, value))
+                if value == clampedValue {
+                    broadcastColorChange(clampedValue)
+                } else {
+                    // Invalid range: Reset and alert
+                    textField.text = String(minor[index!])
+                    let alert = UIAlertController(title: "Invalid Input", message: "Color must be between 0 and 100.", preferredStyle: .alert)
+                    alert.addAction(UIAlertAction(title: "OK", style: .default))
+                    present(alert, animated: true)
+                }
+            } else {
+                // Not a number: Reset
+                textField.text = String(minor[index!])
+                let alert = UIAlertController(title: "Invalid Input", message: "Please enter a valid number.", preferredStyle: .alert)
+                alert.addAction(UIAlertAction(title: "OK", style: .default))
+                present(alert, animated: true)
+            }
+        }
+    }
+    
+    @objc private func dismissKeyboard() {
+        view.endEditing(true)
+    }
+    
+    private lazy var numberToolbar: UIToolbar = {
+        let toolbar = UIToolbar()
+        toolbar.sizeToFit()
+        let doneButton = UIBarButtonItem(title: "Done", style: .done, target: self, action: #selector(dismissKeyboard))
+        let flexibleSpace = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
+        toolbar.setItems([flexibleSpace, doneButton], animated: false)
+        return toolbar
+    }()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
+        inputLevelValue.inputAccessoryView = numberToolbar
+        inputColorValue.inputAccessoryView = numberToolbar
         
         MyVariables.version = (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String)!
         version.text = MyVariables.version
@@ -356,6 +473,13 @@ class ScanViewController: UIViewController, BLEFramework.BLEServiceDelegate,CBPe
         levelSlider.maximumValue = 100
         colorSlider.minimumValue = 0
         colorSlider.maximumValue = 100
+        
+        inputLevelValue.delegate = self
+        inputColorValue.delegate = self
+        inputLevelValue.keyboardType = .numberPad
+        inputColorValue.keyboardType = .numberPad
+        inputLevelValue.text = ""
+        inputColorValue.text = ""
         
         //讀檔
         do {
@@ -470,62 +594,27 @@ class ScanViewController: UIViewController, BLEFramework.BLEServiceDelegate,CBPe
     
     @IBAction func levelSlider(_ sender: UISlider) {
         if index != nil{
-            UINotificationFeedbackGenerator().notificationOccurred(.success)
-            self.peripheralManager?.stopAdvertising()
-            
-            let uuid = UUID(uuidString: "52455454-4c00-0000-0000-" + id[index!] + "00002000")!
-            let localBeaconMajor: CLBeaconMajorValue = 0
-            let localBeaconMinor: CLBeaconMinorValue = CLBeaconMinorValue(Int(levelSlider.value))
-
-            major[index!] = Int(levelSlider.value)
-            levelValue.text = "Level：" + String(major[index!])
-            
-            localBeacon = CLBeaconRegion(uuid: uuid, major:localBeaconMajor, minor:localBeaconMinor, identifier:"SSID")
-            beaconPeripheralData = localBeacon.peripheralData(withMeasuredPower: nil)
-            
-            peripheralManager = CBPeripheralManager(delegate: self, queue: nil)
-            delay(by: 1){
-                self.peripheralManager?.stopAdvertising()
-            }
-            
-            print("localBeacon : \(localBeacon)\nbeaconPeripheralData : \(beaconPeripheralData)\nperipheralManager : \(peripheralManager)")
-            
+            broadcastLevelChange(Int(levelSlider.value))
         }else{
             levelValue.text = "Level：xx"
             colorValue.text = "Color：xx"
             levelSlider.value = Float(0)
             colorSlider.value = Float(0)
+            inputLevelValue.text = ""
+            inputColorValue.text = ""
         }
     }
     @IBAction func colorSlider(_ sender: Any) {
         if index != nil{
-            UINotificationFeedbackGenerator().notificationOccurred(.success)
-            self.peripheralManager?.stopAdvertising()
-            
-            let uuid = UUID(uuidString: "52455454-4c00-0000-0000-" + id[index!] + "00004000")!
-            let localBeaconMajor: CLBeaconMajorValue = 0
-            let localBeaconMinor: CLBeaconMinorValue = CLBeaconMinorValue(Int(colorSlider.value))
-
-            minor[index!] = Int(colorSlider.value)
-            colorValue.text = "Color：" + String(minor[index!])
-            
-            localBeacon = CLBeaconRegion(uuid: uuid, major:localBeaconMajor, minor:localBeaconMinor, identifier:"SSID")
-            beaconPeripheralData = localBeacon.peripheralData(withMeasuredPower: nil)
-            
-            peripheralManager = CBPeripheralManager(delegate: self, queue: nil)
-            
-            print("localBeacon : \(localBeacon)\nbeaconPeripheralData : \(beaconPeripheralData)\nperipheralManager : \(peripheralManager)")
-            
-            delay(by: 1){
-                self.peripheralManager?.stopAdvertising()
-            }
+            broadcastColorChange(Int(colorSlider.value))
         }else{
             levelValue.text = "Level：xx"
             colorValue.text = "Color：xx"
             levelSlider.value = Float(0)
             colorSlider.value = Float(0)
+            inputLevelValue.text = ""
+            inputColorValue.text = ""
         }
-        
     }
     
     
@@ -633,7 +722,7 @@ class ScanViewController: UIViewController, BLEFramework.BLEServiceDelegate,CBPe
 //        if (peripheralname as NSString).length >= 10{
 //            if String(peripheralname.prefix(6)) == "uWave_"{
 //                var checkDuplicates = false
-//                
+//
 //                if !MyVariables.sensors.isEmpty {
 //                    for i in 0...MyVariables.sensors.count-1{
 //                        if peripheralname == MyVariables.sensors[i]{
@@ -1593,7 +1682,7 @@ extension ScanViewController: UITableViewDelegate, UITableViewDataSource {
         
         let cell = tableView.dequeueReusableCell(withIdentifier: "ScanTableCell", for: indexPath) as! ScanTableCell
         cell.deviceName.text = customName
-        cell.deviceUUID.text = info[indexPath.row]
+        cell.deviceUUID.text = bleFramework.GetPeripheralUUID()[indexPath.row]
         cell.devicePower.text = String(rssi[indexPath.row]) + "dBm"
         
         
@@ -1625,42 +1714,50 @@ extension ScanViewController: UITableViewDelegate, UITableViewDataSource {
     {
         UINotificationFeedbackGenerator().notificationOccurred(.success)
         index = indexPath.row
-        levelSlider.value = Float(major[index!])
-        colorSlider.value = Float(minor[index!])
         
         lightName.text = peripheralArray[index!].name
-        levelValue.text = "Level：" + String(major[index!])
-        colorValue.text = "Color：" + String(minor[index!])
-       
+        let isRelay = peripheralArray[index!].name?.prefix(9) == "RELAY_SW_"
+        levelValue.isHidden = isRelay
+        levelSlider.isHidden = isRelay
+        colorValue.isHidden = isRelay
+        colorSlider.isHidden = isRelay
+        inputLevelValue.isHidden = isRelay
+        inputColorValue.isHidden = isRelay
+        keyinLevel.isHidden = isRelay
+        keyinColor.isHidden = isRelay
         
-        if peripheralArray[index!].name?.prefix(9) == "RELAY_SW_"{
-            levelValue.isHidden = true
-            levelSlider.isHidden = true
-            colorValue.isHidden = true
-            colorSlider.isHidden = true
-            
-//            lightSwitch.topAnchor.constraint(equalTo: blueView.bottomAnchor, constant: 200).isActive = true
-        }else{
-            levelValue.isHidden = false
-            levelSlider.isHidden = false
-            colorValue.isHidden = false
-            colorSlider.isHidden = false
-            
-//            lightSwitch.topAnchor.constraint(equalTo: blueView.bottomAnchor, constant: 500).isActive = true
-        }
-        
-        if status[index!] == false{
+        if status[index!] == false {
             lightSwitch.setImage(UIImage(named: "Power off.png"), for: .normal)
-        }else{
+        } else {
             lightSwitch.setImage(UIImage(named: "Power on.png"), for: .normal)
         }
         
-        for i in 0...selected.count-1{
+        for i in 0..<selected.count {
             selected[i] = false
         }
         selected[index!] = true
         tableView.reloadData()
         
+        // 延迟 0.5 秒更新 level/color，确保 didDiscover 有机会刷新数据
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            guard let self = self, let idx = self.index else { return }
+            self.levelSlider.value = Float(self.major[idx])
+            self.colorSlider.value = Float(self.minor[idx])
+            self.levelValue.text = "Level：" + String(self.major[idx])
+            self.colorValue.text = "Color：" + String(self.minor[idx])
+            self.inputLevelValue.text = String(self.major[idx])
+            self.inputColorValue.text = String(self.minor[idx])
+            
+            // 如果是 RELAY_SW，强制重置为 xx（无 level/color）
+            if isRelay {
+                self.levelValue.text = "Level：xx"
+                self.colorValue.text = "Color：xx"
+                self.inputLevelValue.text = ""
+                self.inputColorValue.text = ""
+                self.levelSlider.value = 0
+                self.colorSlider.value = 0
+            }
+        }
     }
     
     func removeTopConstraint(from view: UIView) {
@@ -1736,4 +1833,3 @@ extension ScanViewController: UITableViewDelegate, UITableViewDataSource {
     }
 
 }
-
