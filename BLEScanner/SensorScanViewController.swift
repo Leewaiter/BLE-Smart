@@ -9,7 +9,7 @@ import Foundation
 import UIKit
 import CoreBluetooth
 import CoreLocation
-import BLEFramework
+//import BLEFramework
 
 
 
@@ -24,7 +24,7 @@ class SensorScanViewController: UIViewController, UIGestureRecognizerDelegate, C
 
 
     @IBOutlet weak var tableView: UITableView!
-    private var bleFramework : BLEFramework!
+//    private var bleFramework : BLEFramework!
     private var charInUse: CBCharacteristic!
     private var foundPeripherals: [CBPeripheral] = []
     private var deviceStatus: [Bool] = []
@@ -54,11 +54,11 @@ class SensorScanViewController: UIViewController, UIGestureRecognizerDelegate, C
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        bleFramework = BLEFramework()
-        print(bleFramework.GetVersion())
-        bleFramework.Initialize()
+//        bleFramework = BLEFramework()
+//        print(bleFramework.GetVersion())
+//        bleFramework.Initialize()
         let iPhoneVersion = PhoneInformation()
-        bleFramework.largeMTU = iPhoneVersion.GetDeviceInfo()
+//        bleFramework.largeMTU = iPhoneVersion.GetDeviceInfo()
         
         let longPressRecognizer = UILongPressGestureRecognizer(target: self, action: #selector(GroupViewController.longPress(longPressGestureRecognizer:)))
         longPressRecognizer.minimumPressDuration = 1.0 // 1 second press

@@ -8,7 +8,6 @@
 import Foundation
 import UIKit
 import CoreBluetooth
-import BLEFramework
 
 class OperationViewController: UIViewController {
     
@@ -20,68 +19,34 @@ class OperationViewController: UIViewController {
     @IBOutlet weak var stringType: UISegmentedControl!
     @IBOutlet weak var writeField: UITextField!
     @IBOutlet weak var log: UITextView!
-    public var bleFramework : BLEFramework!
+    
+    public var peripheral: CBPeripheral!       // 取代 bleFramework
     public var charInUse: CBCharacteristic!
     public var hasRead: Bool = false
     public var hasWrite: Bool = false
     public var hasWriteWoRes: Bool = false
     public var hasNotify: Bool = false
     private var writeCmd = ""
-    private var rxQueueInUse = true
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        print("version:",bleFramework.GetVersion())
+        
+        // delegate 指向自己，接收 BLE 回調
+        peripheral.delegate = self
+        
         enableNotify.isEnabled = hasNotify
         disableNotify.isEnabled = hasNotify
         read.isEnabled = hasRead
         write.isEnabled = hasWrite
         writeWithoutResponse.isEnabled = hasWriteWoRes
-        if !hasNotify
-        {
+        
+        if !hasNotify {
             enableNotify.setTitle("N/A", for: .normal)
             disableNotify.setTitle("N/A", for: .normal)
         }
-        if !hasRead
-        {
-            read.setTitle("N/A", for: .normal)
-        }
-        if !hasWrite
-        {
-            write.setTitle("N/A", for: .normal)
-        }
-        if !hasWriteWoRes
-        {
-            writeWithoutResponse.setTitle("N/A", for: .normal)
-        }
-        self.bleFramework.ble_notify_getData = 0
-        let rxQueue: DispatchQueue = DispatchQueue(label: "rx")
-        rxQueue.async (){ ()-> Void in
-            while self.rxQueueInUse
-            {
-                if (self.bleFramework.ble_notify_getData == 1)
-                {
-                    self.bleFramework.ble_notify_getData = 0
-                    DispatchQueue.main.async(execute: {
-                        if self.stringType.selectedSegmentIndex == 0
-                        {
-                            self.log.text.append("\(self.FormatDataWithSpace(self.bleFramework.ble_byteArray))\n")
-                        }else
-                        {
-                            if let string = String(bytes: self.bleFramework.ble_byteArray, encoding: .utf8)
-                            {
-                                self.log.text.append("\(string)\n")
-                            }
-                        }
-                    })
-                }
-            }
-        }
-    }
-    
-    override func viewDidDisappear(_ animated: Bool) {
-        rxQueueInUse = false
-        super.viewDidDisappear(true)
+        if !hasRead    { read.setTitle("N/A", for: .normal) }
+        if !hasWrite   { write.setTitle("N/A", for: .normal) }
+        if !hasWriteWoRes { writeWithoutResponse.setTitle("N/A", for: .normal) }
     }
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -89,79 +54,108 @@ class OperationViewController: UIViewController {
     }
     
     @IBAction func enableNotify(_ sender: Any) {
-        bleFramework.SetNotify(to: bleFramework.peripheralInUse, characteristic: charInUse, enabled: true)
+        peripheral.setNotifyValue(true, for: charInUse)
         log.text += "enable notify\n"
     }
     
     @IBAction func disableNotify(_ sender: Any) {
-        bleFramework.SetNotify(to: bleFramework.peripheralInUse, characteristic: charInUse, enabled: false)
+        peripheral.setNotifyValue(false, for: charInUse)
         log.text += "disable notify\n"
     }
+    
     @IBAction func read(_ sender: Any) {
-        bleFramework.ReadData(to: bleFramework.peripheralInUse, characteristic: charInUse)
+        peripheral.readValue(for: charInUse)
     }
+    
     @IBAction func write(_ sender: Any) {
         writeCmd = writeField.text!
-        WriteData(writeType: .withResponse)
+        writeData(writeType: .withResponse)
     }
+    
     @IBAction func writeWithoutResponse(_ sender: Any) {
         writeCmd = writeField.text!
-        WriteData(writeType: .withoutResponse)
+        writeData(writeType: .withoutResponse)
     }
     
-    private func WriteData(writeType: CBCharacteristicWriteType)
-    {
-        self.log.text.append("write: \(writeCmd)\n")
+    private func writeData(writeType: CBCharacteristicWriteType) {
+        log.text.append("write: \(writeCmd)\n")
         
-        if (stringType.selectedSegmentIndex == 0)
-        {
-            let bytes = writeCmd.utf8
-            var buffer = [UInt8]()
-            for i in 0..<bytes.count/2{
-                let str = (writeCmd as NSString).substring(with: NSMakeRange(i*2, 2))
-                let value = Int(str, radix: 16)
-                if value != nil {
-                    buffer.append((UInt8)(value!))
-                }
+        let data: Data
+        if stringType.selectedSegmentIndex == 0 {
+            // Hex 字串轉 Data
+            data = hexStringToData(writeCmd)
+        } else {
+            // UTF-8 字串轉 Data
+            data = writeCmd.data(using: .utf8) ?? Data()
+        }
+        
+        guard !data.isEmpty else { return }
+        peripheral.writeValue(data, for: charInUse, type: writeType)
+    }
+    
+    private func hexStringToData(_ hex: String) -> Data {
+        var buffer = [UInt8]()
+        let cleaned = hex.replacingOccurrences(of: " ", with: "")
+        var index = cleaned.startIndex
+        while index < cleaned.endIndex {
+            let nextIndex = cleaned.index(index, offsetBy: 2, limitedBy: cleaned.endIndex) ?? cleaned.endIndex
+            if let byte = UInt8(cleaned[index..<nextIndex], radix: 16) {
+                buffer.append(byte)
             }
-            
-            if ((bytes.count % 2) > 0){
-                let str = (writeCmd as NSString).substring(with: NSMakeRange(bytes.count-1, 1))
-                let value = Int(str, radix: 16)
-                if value != nil {
-                    buffer.append((UInt8)(value!))
-                }
-            }
-            
-            let data = NSData(bytes: buffer, length: buffer.count)
-            let setCmdQueue: DispatchQueue = DispatchQueue(label: "setCmd")
-            setCmdQueue.async (){ ()-> Void in
-                if self.bleFramework.WriteData(to: self.bleFramework.peripheralInUse, data as Data, characteristic: self.charInUse, writeType: writeType, waitRx: false)
-                {
-                    
-                }
-            }
-            
-        }else
-        {
-            let setCmdQueue: DispatchQueue = DispatchQueue(label: "setCmd")
-            setCmdQueue.async (){ ()-> Void in
-                if self.bleFramework.WriteData(to: self.bleFramework.peripheralInUse, (self.writeCmd.data(using: String.Encoding(rawValue: String.Encoding.utf8.rawValue)))!, characteristic: self.charInUse, writeType: writeType, waitRx: false)
-                {
-                    
-                }
+            index = nextIndex
+        }
+        return Data(buffer)
+    }
+    
+    private func formatDataWithSpace(_ data: Data) -> String {
+        guard !data.isEmpty else { return "" }
+        return data.map { String(format: "%02X", $0) }.joined(separator: " ")
+    }
+}
+
+// MARK: - CBPeripheralDelegate
+extension OperationViewController: CBPeripheralDelegate {
+    
+    // 收到 Read / Notify 資料
+    func peripheral(_ peripheral: CBPeripheral,
+                    didUpdateValueFor characteristic: CBCharacteristic,
+                    error: Error?) {
+        guard characteristic == charInUse,
+              let data = characteristic.value else { return }
+        
+        DispatchQueue.main.async {
+            if self.stringType.selectedSegmentIndex == 0 {
+                self.log.text.append("\(self.formatDataWithSpace(data))\n")
+            } else {
+                let string = String(data: data, encoding: .utf8) ?? "(invalid utf8)"
+                self.log.text.append("\(string)\n")
             }
         }
     }
     
-    private func FormatDataWithSpace(_ data: [UInt8]) -> String {
-        guard data.count != 0 else {
-            return ""
+    // Write with response 完成回調
+    func peripheral(_ peripheral: CBPeripheral,
+                    didWriteValueFor characteristic: CBCharacteristic,
+                    error: Error?) {
+        DispatchQueue.main.async {
+            if let error = error {
+                self.log.text.append("write error: \(error.localizedDescription)\n")
+            } else {
+                self.log.text.append("write success\n")
+            }
         }
-        var result = [String]()
-        for i in 0..<data.count {
-            result.append(String(format:"%02X", data[i]))
+    }
+    
+    // Notify 狀態變更回調
+    func peripheral(_ peripheral: CBPeripheral,
+                    didUpdateNotificationStateFor characteristic: CBCharacteristic,
+                    error: Error?) {
+        DispatchQueue.main.async {
+            if let error = error {
+                self.log.text.append("notify error: \(error.localizedDescription)\n")
+            } else {
+                self.log.text.append("notify \(characteristic.isNotifying ? "enabled" : "disabled")\n")
+            }
         }
-        return result.joined(separator: " ")
     }
 }

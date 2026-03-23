@@ -9,7 +9,7 @@ import Foundation
 import UIKit
 import CoreBluetooth
 import CoreLocation
-import BLEFramework
+//import BLEFramework
 
 
 
@@ -27,7 +27,7 @@ class SensorViewController: UIViewController,CBPeripheralManagerDelegate, UIGest
     @IBOutlet weak var levelValue: UILabel!
     @IBOutlet weak var colorSlider: UISlider!
     @IBOutlet weak var colorValue: UILabel!
-    private var bleFramework : BLEFramework!
+//    private var bleFramework : BLEFramework!
     private var charInUse: CBCharacteristic!
     private var foundPeripherals: [CBPeripheral] = []
     private var deviceStatus: [Bool] = []
@@ -96,11 +96,11 @@ class SensorViewController: UIViewController,CBPeripheralManagerDelegate, UIGest
                                              sensor3: MyVariables.sensor3,
                                              sensor4: MyVariables.sensor4)
         
-        bleFramework = BLEFramework()
-        print(bleFramework.GetVersion())
-        bleFramework.Initialize()
+//        bleFramework = BLEFramework()
+//        print(bleFramework.GetVersion())
+//        bleFramework.Initialize()
         let iPhoneVersion = PhoneInformation()
-        bleFramework.largeMTU = iPhoneVersion.GetDeviceInfo()
+//        bleFramework.largeMTU = iPhoneVersion.GetDeviceInfo()
         
         let longPressRecognizer = UILongPressGestureRecognizer(target: self, action: #selector(SensorViewController.longPress(longPressGestureRecognizer:)))
         longPressRecognizer.minimumPressDuration = 1.0 // 1 second press

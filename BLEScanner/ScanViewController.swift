@@ -9,7 +9,6 @@ import Foundation
 import UIKit
 import CoreBluetooth
 import CoreLocation
-import BLEFramework
 
 
 struct MyVariables {
@@ -113,7 +112,7 @@ extension Data {
 }
 
 
-class ScanViewController: UIViewController, BLEFramework.BLEServiceDelegate,CBPeripheralManagerDelegate, UIGestureRecognizerDelegate, CBPeripheralDelegate, UITextFieldDelegate {
+class ScanViewController: UIViewController, CBCentralManagerDelegate, CBPeripheralManagerDelegate, UIGestureRecognizerDelegate, CBPeripheralDelegate, UITextFieldDelegate {
     
     var locationManager = CLLocationManager()
     @IBOutlet weak var tableView: UITableView!
@@ -126,7 +125,9 @@ class ScanViewController: UIViewController, BLEFramework.BLEServiceDelegate,CBPe
     @IBOutlet weak var colorValue: UILabel!
     @IBOutlet weak var inputLevelValue: UITextField!
     @IBOutlet weak var inputColorValue: UITextField!
-    private var bleFramework : BLEFramework!
+    
+    // BLE Manager
+    private var centralManager: CBCentralManager!
     private var charInUse: CBCharacteristic!
     private var foundPeripherals: [CBPeripheral] = []
     private var deviceStatus: [Bool] = []
@@ -139,6 +140,11 @@ class ScanViewController: UIViewController, BLEFramework.BLEServiceDelegate,CBPe
     private var logPath = "/log"
     private var serviceDictionary = [CBService: [CBCharacteristic]]()
     private let greenColor = UIColor(red: 20/255, green: 210/255, blue: 57/255, alpha: 1)
+    
+    // Characteristics for writing
+    var dataRateInUseWrite: CBCharacteristic?
+    var dataRateInUseNotify: CBCharacteristic?
+    var peripheralInUse: CBPeripheral?
     private let THROUGHPUT_SERVICEUUID = "00112233-4455-6677-8899-AABBCCDDEEFF"//"00005301-0000-0041-4C50-574953450000"//"00112233-4455-6677-8899-AABBCCDDEEFF"
     private let THROUGHPUT_CHARACTERISTICUUID_WRITE_AT_CMD = "50515253-5455-5657-5859-5A5B5C5D5E5F"
     private let THROUGHPUT_CHARACTERISTICUUID_WRITE =       "50515253-5455-5657-5859-5A5B5C5D5E5F"//"00005302-0000-0041-4C50-574953450000"//"50515253-5455-5657-5859-5A5B5C5D5E5F"
@@ -211,31 +217,29 @@ class ScanViewController: UIViewController, BLEFramework.BLEServiceDelegate,CBPe
         print(TRF2_data!)
         
         print("write command:\(String(describing: data))")
-        print(self.bleFramework.dataRateInUseWrite!)
-        print(self.bleFramework.dataRateInUseNotify!)
-        print(self.bleFramework.peripheralInUse!)
-        self.bleFramework.peripheralInUse?.writeValue(TRF2_data!, for: self.bleFramework.dataRateInUseWrite!, type: .withResponse)
+        print(self.dataRateInUseWrite!)
+        print(self.dataRateInUseNotify!)
+        print(self.peripheralInUse!)
+        self.peripheralInUse?.writeValue(TRF2_data!, for: self.dataRateInUseWrite!, type: .withResponse)
         print("poststringtrf2---")
     }
     
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        if segue.identifier == "segue_scan_to_throughput" {
-            let controller = segue.destination as? AppThroughput
-            controller?.bleFramework = bleFramework
-        } else if segue.identifier == "segue_scan_to_fota" {
-            let controller = segue.destination as? AppFota
-            controller?.bleFramework = bleFramework
-        } else if segue.identifier == "segue_scan_to_service" {
-            let controller = segue.destination as? ServiceViewController
-            controller?.bleFramework = bleFramework
-            controller?.deviceInUseUUID = deviceInUseUUID
-        } else if segue.identifier == "segue_scan_to_zigbee" {
-            let controller = segue.destination as? ZigbeeSwitchViewController
-            controller?.bleFramework = bleFramework
-            controller?.deviceInUseUUID = deviceInUseUUID
-            controller?.charInUse = charInUse
-        }
-    }
+//    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+//        if segue.identifier == "segue_scan_to_throughput" {
+//            let controller = segue.destination as? AppThroughput
+//            // Pass necessary data to AppThroughput
+//        } else if segue.identifier == "segue_scan_to_fota" {
+//            let controller = segue.destination as? AppFota
+//            // Pass necessary data to AppFota
+//        } else if segue.identifier == "segue_scan_to_service" {
+//            let controller = segue.destination as? ServiceViewController
+//            controller?.deviceInUseUUID = deviceInUseUUID
+//        } else if segue.identifier == "segue_scan_to_zigbee" {
+//            let controller = segue.destination as? ZigbeeSwitchViewController
+//            controller?.deviceInUseUUID = deviceInUseUUID
+//            controller?.charInUse = charInUse
+//        }
+//    }
     
     // refreshFunction
     @objc func getData(sender: UIButton){
@@ -463,11 +467,8 @@ class ScanViewController: UIViewController, BLEFramework.BLEServiceDelegate,CBPe
         tapGesture.numberOfTapsRequired = 1
         version.addGestureRecognizer(tapGesture)
   
-        bleFramework = BLEFramework()
-        print(bleFramework.GetVersion())
-        bleFramework.Initialize()
-        let iPhoneVersion = PhoneInformation()
-        bleFramework.largeMTU = iPhoneVersion.GetDeviceInfo()
+        // Initialize CBCentralManager
+        centralManager = CBCentralManager(delegate: self, queue: nil)
         
         levelSlider.minimumValue = 1
         levelSlider.maximumValue = 100
@@ -541,14 +542,13 @@ class ScanViewController: UIViewController, BLEFramework.BLEServiceDelegate,CBPe
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(true)
-        bleFramework.RegisterBLE(self)
         UpdateBleList()
     }
     
 //    override func viewWillDisappear(_ animated: Bool) {
 //            super.viewWillDisappear(animated)
-//        if bleFramework.isScanning == true {
-//            bleFramework.stopScan()
+//        if centralManager.isScanning {
+//            centralManager.stopScan()
 //            }
 //        }
     
@@ -634,7 +634,9 @@ class ScanViewController: UIViewController, BLEFramework.BLEServiceDelegate,CBPe
                 if !deviceStatus[index]
                 {
                     Connected[index] = !Connected[index]
-                    bleFramework.Disconnect(to: peripheralArray[index])
+                    if index < peripheralArray.count {
+                        centralManager.cancelPeripheralConnection(peripheralArray[index])
+                    }
                 }
             }
         }
@@ -644,13 +646,9 @@ class ScanViewController: UIViewController, BLEFramework.BLEServiceDelegate,CBPe
     
     private func UpdateTable()
     {
-//        deviceConnected = bleFramework.GetPeripheralConnected()
-//        deviceRSSI = bleFramework.GetPeripheralRSSI()
-//        foundPeripherals = bleFramework.GetPeripherals()
         deviceConnected = Connected
-        deviceStatus = bleFramework.GetPeripheralStatus()
-        deviceUUIDs = bleFramework.GetPeripheralUUID()
-        serviceDictionary = bleFramework.GetServiceDictionary()
+        deviceStatus = peripheralArray.map { $0.state == .connected }
+        deviceUUIDs = peripheralArray.map { $0.identifier.uuidString }
     }
     
     
@@ -663,7 +661,30 @@ class ScanViewController: UIViewController, BLEFramework.BLEServiceDelegate,CBPe
         return filePath
     }
     
-    func BLECentralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber) {
+    // MARK: - CBCentralManagerDelegate
+    
+    func centralManagerDidUpdateState(_ central: CBCentralManager) {
+        switch central.state {
+        case .poweredOn:
+            print("Bluetooth is powered on")
+            // Start scanning for peripherals
+            centralManager.scanForPeripherals(withServices: nil, options: [CBCentralManagerScanOptionAllowDuplicatesKey: true])
+        case .poweredOff:
+            print("Bluetooth is powered off")
+        case .resetting:
+            print("Bluetooth is resetting")
+        case .unauthorized:
+            print("Bluetooth is unauthorized")
+        case .unsupported:
+            print("Bluetooth is unsupported")
+        case .unknown:
+            print("Bluetooth state is unknown")
+        @unknown default:
+            print("Unknown Bluetooth state")
+        }
+    }
+    
+    func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber) {
         let peripheralname = advertisementData[CBAdvertisementDataLocalNameKey] as? String
             ?? peripheral.name
             ?? "N/A"
@@ -1653,11 +1674,11 @@ class ScanViewController: UIViewController, BLEFramework.BLEServiceDelegate,CBPe
         }
     }
     
-    func BLECentralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
+    func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
         UpdateTable()
     }
     
-    func BLECentralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
+    func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
         DispatchQueue.main.async(execute: {
             self.UpdateBleList()
         })
@@ -1682,7 +1703,9 @@ extension ScanViewController: UITableViewDelegate, UITableViewDataSource {
         
         let cell = tableView.dequeueReusableCell(withIdentifier: "ScanTableCell", for: indexPath) as! ScanTableCell
         cell.deviceName.text = customName
-        cell.deviceUUID.text = bleFramework.GetPeripheralUUID()[indexPath.row]
+        if indexPath.row < deviceUUIDs.count {
+            cell.deviceUUID.text = deviceUUIDs[indexPath.row]
+        }
         cell.devicePower.text = String(rssi[indexPath.row]) + "dBm"
         
         

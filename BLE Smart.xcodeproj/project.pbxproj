@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		1212E535283B73450016CEA5 /* BLEFramework.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 1212E532283B73400016CEA5 /* BLEFramework.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		12187F2F261D9D97001A2846 /* AppThroughput.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12187F2E261D9D97001A2846 /* AppThroughput.swift */; };
 		12187F31261D9EE0001A2846 /* AppFota.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12187F30261D9EE0001A2846 /* AppFota.swift */; };
 		12188191262D96EF001A2846 /* ServiceViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12188190262D96EF001A2846 /* ServiceViewController.swift */; };
@@ -25,7 +24,6 @@
 		1251161E2611D6750092B5F0 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 1251161C2611D6750092B5F0 /* LaunchScreen.storyboard */; };
 		12AEA89E27DAFB5B0066A115 /* ZigbeeSwitchViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12AEA89D27DAFB5B0066A115 /* ZigbeeSwitchViewController.swift */; };
 		3B434E132EB3030E00C2354B /* WifiRB1ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B434E122EB302EF00C2354B /* WifiRB1ViewController.swift */; };
-		3BD5D7C62E79320C00222A88 /* BLEFramework.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1212E532283B73400016CEA5 /* BLEFramework.framework */; settings = {ATTRIBUTES = (Required, ); }; };
 		9F0FE3F32BFCA040005E3A28 /* RecipeSensor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F0FE3F22BFCA040005E3A28 /* RecipeSensor.swift */; };
 		9F2A427C2B107F7700D62ED3 /* SwitchViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F2A427A2B107F7700D62ED3 /* SwitchViewController.swift */; };
 		9F2A427D2B107F7700D62ED3 /* SwitchTableCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F2A427B2B107F7700D62ED3 /* SwitchTableCell.swift */; };
@@ -53,7 +51,6 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				1212E535283B73450016CEA5 /* BLEFramework.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -61,7 +58,6 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		1212E532283B73400016CEA5 /* BLEFramework.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = BLEFramework.framework; sourceTree = "<group>"; };
 		12187F2E261D9D97001A2846 /* AppThroughput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppThroughput.swift; sourceTree = "<group>"; };
 		12187F30261D9EE0001A2846 /* AppFota.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppFota.swift; sourceTree = "<group>"; };
 		12188190262D96EF001A2846 /* ServiceViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceViewController.swift; sourceTree = "<group>"; };
@@ -107,7 +103,6 @@
 			files = (
 				9F3766EE2C04291A0088F9E8 /* SmartCodable in Frameworks */,
 				9F7B8C562BE363C100D0889D /* SwiftMQTT in Frameworks */,
-				3BD5D7C62E79320C00222A88 /* BLEFramework.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -118,7 +113,6 @@
 			isa = PBXGroup;
 			children = (
 				9F6E75342923329400424F0F /* BLE Light.entitlements */,
-				125116292611D6FB0092B5F0 /* Frameworks */,
 				125116102611D6740092B5F0 /* BLEScanner */,
 				1251160F2611D6740092B5F0 /* Products */,
 			);
@@ -135,50 +129,42 @@
 		125116102611D6740092B5F0 /* BLEScanner */ = {
 			isa = PBXGroup;
 			children = (
-				1212E532283B73400016CEA5 /* BLEFramework.framework */,
-				9F7B8C4A2BE0F10700D0889D /* OccupancyController.swift */,
-				9FC0FE172C21531500E7E8D0 /* DataModelCustomName.swift */,
-				9FC420F92939E6F6001EB2A7 /* Recipe.swift */,
-				9F2A42802B15EC5800D62ED3 /* RecipeSwitch.swift */,
-				9F0FE3F22BFCA040005E3A28 /* RecipeSensor.swift */,
-				9F6E7532291BA81100424F0F /* BluetoothManager.swift */,
 				125116112611D6740092B5F0 /* AppDelegate.swift */,
-				12188190262D96EF001A2846 /* ServiceViewController.swift */,
-				125116132611D6740092B5F0 /* SceneDelegate.swift */,
-				12187F2E261D9D97001A2846 /* AppThroughput.swift */,
-				121881B2262ECC69001A2846 /* PhoneInformation.swift */,
 				12187F30261D9EE0001A2846 /* AppFota.swift */,
-				9F2CD362293896230027BB36 /* GroupViewController.swift */,
-				9F2CD3642939D6870027BB36 /* GroupTableCell.swift */,
-				9F2A427B2B107F7700D62ED3 /* SwitchTableCell.swift */,
-				9F2A427A2B107F7700D62ED3 /* SwitchViewController.swift */,
-				9F2A42822B17138800D62ED3 /* SwitchScanViewController.swift */,
-				9FACDAF12BF1E01B0016829E /* SensorTableCell.swift */,
-				9FACDAF32BF1E0DD0016829E /* SensorViewController.swift */,
-				9FACDAF52BF1E1070016829E /* SensorScanViewController.swift */,
+				12187F2E261D9D97001A2846 /* AppThroughput.swift */,
+				1251161A2611D6750092B5F0 /* Assets.xcassets */,
+				9F6E7532291BA81100424F0F /* BluetoothManager.swift */,
+				1218819C262E817B001A2846 /* CharTable.swift */,
+				1218819A262E7F7D001A2846 /* CharViewController.swift */,
+				9FC0FE172C21531500E7E8D0 /* DataModelCustomName.swift */,
 				9FC420FB293DC132001EB2A7 /* DetailTableCell.swift */,
 				9F716C7F2BFF26CE00D134A1 /* DetailViewController.swift */,
-				124F2A722612CEDC00839A12 /* ScanViewController.swift */,
-				124F2A752612D98000839A12 /* ScanTableCell.swift */,
-				3B434E122EB302EF00C2354B /* WifiRB1ViewController.swift */,
-				121881A4262E879C001A2846 /* OperationViewController.swift */,
-				12AEA89D27DAFB5B0066A115 /* ZigbeeSwitchViewController.swift */,
-				12188192262E73B4001A2846 /* ServiceTable.swift */,
-				1218819A262E7F7D001A2846 /* CharViewController.swift */,
-				1218819C262E817B001A2846 /* CharTable.swift */,
-				125116172611D6740092B5F0 /* Main.storyboard */,
-				1251161A2611D6750092B5F0 /* Assets.xcassets */,
-				1251161C2611D6750092B5F0 /* LaunchScreen.storyboard */,
+				9F2CD3642939D6870027BB36 /* GroupTableCell.swift */,
+				9F2CD362293896230027BB36 /* GroupViewController.swift */,
 				1251161F2611D6750092B5F0 /* Info.plist */,
+				1251161C2611D6750092B5F0 /* LaunchScreen.storyboard */,
+				125116172611D6740092B5F0 /* Main.storyboard */,
+				9F7B8C4A2BE0F10700D0889D /* OccupancyController.swift */,
+				121881A4262E879C001A2846 /* OperationViewController.swift */,
+				121881B2262ECC69001A2846 /* PhoneInformation.swift */,
+				9FC420F92939E6F6001EB2A7 /* Recipe.swift */,
+				9F0FE3F22BFCA040005E3A28 /* RecipeSensor.swift */,
+				9F2A42802B15EC5800D62ED3 /* RecipeSwitch.swift */,
+				124F2A752612D98000839A12 /* ScanTableCell.swift */,
+				124F2A722612CEDC00839A12 /* ScanViewController.swift */,
+				125116132611D6740092B5F0 /* SceneDelegate.swift */,
+				9FACDAF52BF1E1070016829E /* SensorScanViewController.swift */,
+				9FACDAF12BF1E01B0016829E /* SensorTableCell.swift */,
+				9FACDAF32BF1E0DD0016829E /* SensorViewController.swift */,
+				12188192262E73B4001A2846 /* ServiceTable.swift */,
+				12188190262D96EF001A2846 /* ServiceViewController.swift */,
+				9F2A42822B17138800D62ED3 /* SwitchScanViewController.swift */,
+				9F2A427B2B107F7700D62ED3 /* SwitchTableCell.swift */,
+				9F2A427A2B107F7700D62ED3 /* SwitchViewController.swift */,
+				3B434E122EB302EF00C2354B /* WifiRB1ViewController.swift */,
+				12AEA89D27DAFB5B0066A115 /* ZigbeeSwitchViewController.swift */,
 			);
 			path = BLEScanner;
-			sourceTree = "<group>";
-		};
-		125116292611D6FB0092B5F0 /* Frameworks */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -190,7 +176,6 @@
 			buildPhases = (
 				1251160A2611D6740092B5F0 /* Sources */,
 				1251160B2611D6740092B5F0 /* Frameworks */,
-				3B0878AD2E263F44009B9E03 /* ShellScript */,
 				1251160C2611D6740092B5F0 /* Resources */,
 				1255E40F2716859100BC232A /* Embed Frameworks */,
 			);
@@ -255,26 +240,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
-
-/* Begin PBXShellScriptBuildPhase section */
-		3B0878AD2E263F44009B9E03 /* ShellScript */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-			);
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "find \"${BUILT_PRODUCTS_DIR}\" -name \"BLEFramework.framework.dSYM\" -exec cp -R {} \"${DWARF_DSYM_FOLDER_PATH}/\" \\;\n";
-		};
-/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		1251160A2611D6740092B5F0 /* Sources */ = {
